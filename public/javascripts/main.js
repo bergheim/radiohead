@@ -32,24 +32,34 @@ function Player() {
     }
 }
 
-var players = [];
-
-var p = new Player();
-p.init();
-players.push(p);
+var players = {}
 
 function render() {
     rh.cnv.clearRect(0, 0, rh.canvas.width, rh.canvas.height);
-    for (var i = 0, len = players.length; i < len; i++) {
-        players[i].render();
+    //for (var i = 0, len = players.length; i < len; i++) {
+    //    players[i].render();
+    //}
+    for (var p in players) {
+        players[p].render();
     }
 }
 
 var socket = io.connect('http://localhost:8080');
 socket.on('position', function (data) {
-    players[0].update(data.pos[0], data.pos[1]);
-    render();
+    if (players.hasOwnProperty(data.player)) {
+        players[data.player].update(data.pos[0], data.pos[1]);
+        render();
+    }
 });
+socket.on('getPlayers', function (data) {
+});
+
+socket.on('newPlayer', function (data) {
+    var p = new Player();
+    p.init();
+    players[data.player] = p;
+});
+
 socket.on('foo', function (data) {
     console.log(data);
 });

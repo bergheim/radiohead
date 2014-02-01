@@ -35,7 +35,7 @@ app.configure(function(){
 var io = require('socket.io').listen(8080);
 io.sockets.on('connection', function (socket) {
     console.log("connection");
-    socket.emit('foo', { hello: 'world' });
+    //socket.emit('foo', { hello: 'world' });
     socket.on('crash', function (data) {
     	var lastCrash = playerCrash[data.player];
     	var nextBlinkTime = lastCrash + 30;
@@ -46,9 +46,12 @@ io.sockets.on('connection', function (socket) {
     	};
         console.log("Crashed!!", data);
     });
+    socket.on('newPlayer', function (data) {
+        socket.broadcast.emit('newPlayer', { "player": data.player});
+    });
     var iteration = 0;
     socket.on('position', function (data) {
-        socket.broadcast.emit('position', { "player": '1', "pos": data.pos});
+        socket.broadcast.emit('position', { "player": data.player, "pos": data.pos});
     });
 });
 
