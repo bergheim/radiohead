@@ -16,6 +16,7 @@ var hue = require("node-hue-api"),
     username = "newdeveloper",
     api = new HueApi(host, username),
     playerColors = {1:0, 2:130, 3:250};
+    playerCrash = {1: "", 2:"", 3:"" };
 
 var app = express();
 
@@ -36,6 +37,13 @@ io.sockets.on('connection', function (socket) {
     console.log("connection");
     socket.emit('foo', { hello: 'world' });
     socket.on('crash', function (data) {
+    	var lastCrash = playerCrash[data.player];
+    	var nextBlinkTime = lastCrash + 30;
+    	var now = +new Date().now();
+    	if (now > nextBlinkTime) {
+    		hitPlayer(data.player)
+    		playerCrash[data.player] = now;
+    	};
         console.log("Crashed!!", data);
     });
     var iteration = 0;
@@ -71,8 +79,11 @@ var displayError = function(err) {
     console.error(err);
 };
 var intializePlayer = function(id) {
+	playerCrash[id] = +new Date();
+	console.log("playerCrash "+id +" crash init: "+playerCrash[id]);
     var newstate = lightState.create().on().hsl(playerColors[id],100, 0);
     setLight(id, newstate);
+    setLight(id, lightState.create().off());
 };
 var terminatePlayer = function(id) {
     var newstate = lightState.create().off();
@@ -83,14 +94,53 @@ var hitPlayer = function(id) {
     setLight(id, newstate);
 };
 var startGame = function() {
-	var newstate = "";
+	var run = function() {//sets yellow color
+		var blink = lightState.create().on().alert(false).off();
+
+				console.log("blink");
+		return setGroupLight(1, blink)
+			   .then(function () {
+					console.log("blink");
+					return setGroupLight(1, blink); })
+			   .then(function() { 
+					console.log("blink");
+					return setGroupLight(1, blink); })
+			    .fail(displayError);
+	}
+	return api.getGroup(1).then(function (group) {
+		console.log("group", group);
+		if (group.LastAction && group.LastAction.on) {
+			console.log('lights are on, turning off')
+			return setGroupLight(1, lightState.create().off()).then(run);
+		} else
+			return run();
+	});	
+}
+var resetGame = function() {
+		var yellow = lightState.create().on().hsl(120,100, 0);
+		return setGroupLight(1, yellow).then(function() { return setGroupLight(1, lightState.create().off()); });
 }
 
 function setLight(id, state) {
-    api.setLightState(id, state)
+    return api.setLightState(id, state)
     .then(displayResult)
     .fail(displayError)
     .done();
 }
 
+function setGroupLight(id, state) {
+	return api.setGroupLightState(id, state);
+}
+
+resetGame()
+.then(function() {
+	console.log("finished reset");
+	return startGame();
+})
+.then(function() {
+	console.log("init player");
+	intializePlayer(1);
+	intializePlayer(2);
+	intializePlayer(3);
+});
 
