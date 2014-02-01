@@ -33,16 +33,14 @@ app.configure(function(){
 
 var io = require('socket.io').listen(8080);
 io.sockets.on('connection', function (socket) {
+    console.log("connection");
     socket.emit('foo', { hello: 'world' });
     socket.on('crash', function (data) {
         console.log("Crashed!!", data);
     });
     var iteration = 0;
     socket.on('position', function (data) {
-        console.log("Pos: " + data.pos[0], data.pos[1]);
-        if (!(iteration++ % 2)) {
-            socket.broadcast({"player": 1, 'pos': data.pos });
-        }
+        socket.broadcast.emit('position', { "player": '1', "pos": data.pos});
     });
 });
 
