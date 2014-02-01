@@ -15,8 +15,10 @@ var hue = require("node-hue-api"),
     host = "192.168.1.47",
     username = "newdeveloper",
     api = new HueApi(host, username),
-    playerColors = {1:0, 2:130, 3:250};
-    playerCrash = {1: "", 2:"", 3:"" };
+    playerColors = {1:0, 2:130, 3:250},
+    playerCrash = {1: "", 2:"", 3:"" },
+    players = {},
+    numPlayers = 1;
 
 var app = express();
 
@@ -37,16 +39,19 @@ io.sockets.on('connection', function (socket) {
     console.log("connection");
     //socket.emit('foo', { hello: 'world' });
     socket.on('crash', function (data) {
-    	var lastCrash = playerCrash[data.player];
-    	var nextBlinkTime = lastCrash + 30;
-    	var now = +new Date().now();
+    	var playerId = players[data.player];
+    	var lastCrash = playerCrash[playerId];
+    	var nextBlinkTime = lastCrash + 500;
+    	var now = +new Date();
     	if (now > nextBlinkTime) {
-    		hitPlayer(data.player)
-    		playerCrash[data.player] = now;
+    		console.log("player id",playerId);
+    		hitPlayer(playerId)
+    		playerCrash[playerId] = now;
     	};
         console.log("Crashed!!", data);
     });
     socket.on('newPlayer', function (data) {
+    	players[data.player] = numPlayers++;
         socket.broadcast.emit('newPlayer', { "player": data.player});
     });
     var iteration = 0;
