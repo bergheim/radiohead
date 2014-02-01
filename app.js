@@ -84,6 +84,9 @@ var hitPlayer = function(id) {
     var newstate = lightState.create().alert(false).off();
     setLight(id, newstate);
 };
+var startGame = function() {
+	var newstate = "";
+}
 
 function setLight(id, state) {
     api.setLightState(id, state)
